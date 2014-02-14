@@ -1,0 +1,26 @@
+<VirtualHost *:80> 
+	<Directory "/var/www/phpmyadmin/">
+    		Order allow,deny
+    		Allow from all
+	</Directory>
+        ServerAdmin webmaster@localhost 
+		ServerName wmde-bugs.wmflabs.org
+        DocumentRoot /var/www/bugzilla 
+        <Directory "/var/www/bugzilla"> 
+                AddHandler cgi-script .cgi .php
+                Options +ExecCGI +Indexes +FollowSymLinks
+                DirectoryIndex index.cgi 
+                AllowOverride All
+        </Directory> 
+
+        ErrorLog ${APACHE_LOG_DIR}/bugzilla/error.log 
+
+        # Possible values include: debug, info, notice, warn, error, crit, 
+        # alert, emerg. 
+        LogLevel info 
+
+        CustomLog ${APACHE_LOG_DIR}/bugzilla/access.log combined 
+
+</VirtualHost>  
+PerlSwitches -wT
+PerlConfigRequire /var/www/bugzilla/mod_perl.pl
