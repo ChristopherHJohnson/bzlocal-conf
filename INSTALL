@@ -1,0 +1,90 @@
+***disable puppet install of exim4
+mv /etc/cron.d/puppet ~
+git clone https://github.com/ChristopherHJohnson/bzlocal-conf.git /tmp/bzlocal-conf
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install postfix
+apt-get install dovecot-pop3d
+
+cp /tmp/bzlocal-conf/postfix/main.cf /etc/postfix
+
+#Create Virtual Alias 
+cp /tmp/bzlocal-conf/postfix/virtual /etc/postfix
+postmap  /etc/postfix/virtual
+
+#Add mailbox owner
+useradd bugwatcher
+
+#Copy ssl certificates
+cp /tmp/bzlocal-conf/ssl/server_crt.pem /etc/ssl/certs
+cp /tmp/bzlocal-conf/ssl/server_key.pem /etc/ssl/private/server_key.pem
+
+#Edit Dovecot Configuration Files:
+#10-mail.conf
+mail_location = maildir:/var/home/%u/Maildir
+
+#10-ssl.conf
+# SSL/TLS support: yes, no, required. <doc/wiki/SSL.txt>
+ssl = yes
+# PEM encoded X.509 SSL/TLS certificate and private key. They're opened before
+# dropping root privileges, so keep the key file unreadable by anyone but
+# root. Included doc/mkcert.sh can be used to easily generate self-signed
+# certificate, just make sure to update the domains in dovecot-openssl.cnf
+ssl_cert = </etc/ssl/certs/server_crt.pem
+ssl_key = </etc/ssl/private/server_key.pem
+
+#auth-system.conf.ext
+##
+## User databases
+##
+
+# System users (NSS, /etc/passwd, or similiar). In many systems nowadays this
+# uses Name Service Switch, which is configured in /etc/nsswitch.conf.
+userdb {
+  # <doc/wiki/AuthDatabase.Passwd.txt>
+  driver = passwd
+  # [blocking=no]
+  args = home=/var/home/%u mail=maildir:/var/home/%u/Maildir
+}
+
+Edit /etc/pam.d/dovecot
+#%PAM-1.0
+
+auth    required        pam_unix.so nullok
+account required        pam_unix.so
+
+#@include common-auth
+#@include common-account
+#@include common-session
+
+Set Up Exim Satellite
+# /etc/exim4/update-exim4.conf.conf
+#
+# Edit this file and /etc/mailname by hand and execute update-exim4.conf
+# yourself or use 'dpkg-reconfigure exim4-config'
+#
+# Please note that this is _not_ a dpkg-conffile and that automatic changes
+# to this file might happen. The code handling this will honor your local
+# changes, so this is usually fine, but will break local schemes that mess
+# around with multiple versions of the file.
+#
+# update-exim4.conf uses this file to determine variable values to generate
+# exim configuration macros for the configuration file.
+#
+# Most settings found in here do have corresponding questions in the
+# Debconf configuration, but not all of them.
+#
+# This is a Debian specific file
+
+dc_eximconfig_configtype='satellite'
+dc_other_hostnames=''
+dc_local_interfaces='127.0.0.1 ; 10.4.1.148 ;'
+dc_readhost=''
+dc_relay_domains='scrumbugz-mail.wmflabs.org'
+dc_minimaldns='false'
+dc_relay_nets=''
+dc_smarthost='10.4.1.172'
+CFILEMODE='644'
+dc_use_split_config='false'
+dc_hide_mailname='true'
+dc_mailname_in_oh='true'
+dc_localdelivery='mail_spool'
