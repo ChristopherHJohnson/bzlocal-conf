@@ -91,3 +91,4 @@ dc_localdelivery='mail_spool'
 
 mv /etc/exim4/exim4.conf exim4.org
 update-exim4.conf
+/usr/sbin/exim4 -bd -q30m
